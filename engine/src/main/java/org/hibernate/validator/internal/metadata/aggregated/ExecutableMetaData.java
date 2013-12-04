@@ -16,16 +16,7 @@
 */
 package org.hibernate.validator.internal.metadata.aggregated;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import javax.validation.ConstraintDeclarationException;
-import javax.validation.ElementKind;
-import javax.validation.metadata.ParameterDescriptor;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.aggregated.rule.MethodConfigurationRule;
 import org.hibernate.validator.internal.metadata.aggregated.rule.OverridingMethodMustNotAlterParameterConstraints;
 import org.hibernate.validator.internal.metadata.aggregated.rule.ParallelMethodsMustNotDefineGroupConversionForCascadedReturnValue;
@@ -43,6 +34,16 @@ import org.hibernate.validator.internal.metadata.raw.ExecutableElement;
 import org.hibernate.validator.internal.util.CollectionHelper;
 import org.hibernate.validator.internal.util.logging.Log;
 import org.hibernate.validator.internal.util.logging.LoggerFactory;
+
+import javax.validation.ConstraintDeclarationException;
+import javax.validation.ElementKind;
+import javax.validation.metadata.ParameterDescriptor;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashMap;
@@ -298,8 +299,8 @@ public class ExecutableMetaData extends AbstractConstraintMetaData {
 		 * executable with a given signature within a type hierarchy.
 		 * @param constraintHelper the constraint helper
 		 */
-		public Builder(Class<?> beanClass, ConstrainedExecutable constrainedExecutable, ConstraintHelper constraintHelper) {
-			super( beanClass, constraintHelper );
+		public Builder(Class<?> beanClass, ConstrainedExecutable constrainedExecutable, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+			super( beanClass, constraintHelper, typeResolver );
 
 			kind = constrainedExecutable.getKind();
 			location = constrainedExecutable.getLocation();
@@ -319,9 +320,10 @@ public class ExecutableMetaData extends AbstractConstraintMetaData {
 			//does one of the executables override the other one?
 			return
 					location.getExecutableElement().equals( executableElement ) ||
-							location.getExecutableElement().overrides( executableElement ) ||
+							location.getExecutableElement().overrides( executableElement, typeResolver ) ||
 							executableElement.overrides(
-									location.getExecutableElement()
+									location.getExecutableElement(),
+                                    typeResolver
 							);
 		}
 
@@ -398,7 +400,8 @@ public class ExecutableMetaData extends AbstractConstraintMetaData {
 								new ParameterMetaData.Builder(
 										location.getBeanClass(),
 										oneParameter,
-										constraintHelper
+										constraintHelper,
+                                        typeResolver
 								)
 						);
 					}

@@ -16,14 +16,7 @@
 */
 package org.hibernate.validator.test.internal.metadata.aggregated;
 
-import java.lang.reflect.Method;
-import java.util.Set;
-import javax.validation.constraints.NotNull;
-import javax.validation.groups.Default;
-
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.BeanMetaDataManager;
 import org.hibernate.validator.internal.metadata.aggregated.BeanMetaData;
 import org.hibernate.validator.internal.metadata.aggregated.ExecutableMetaData;
@@ -34,6 +27,13 @@ import org.hibernate.validator.internal.metadata.raw.ExecutableElement;
 import org.hibernate.validator.test.internal.metadata.Customer;
 import org.hibernate.validator.test.internal.metadata.CustomerRepository;
 import org.hibernate.validator.test.internal.metadata.CustomerRepository.ValidationGroup;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import javax.validation.constraints.NotNull;
+import javax.validation.groups.Default;
+import java.lang.reflect.Method;
+import java.util.Set;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -51,7 +51,7 @@ public class ParameterMetaDataTest {
 
 	@BeforeMethod
 	public void setupBeanMetaData() {
-		beanMetaData = new BeanMetaDataManager( new ConstraintHelper() ).getBeanMetaData( CustomerRepository.class );
+		beanMetaData = new BeanMetaDataManager( new ConstraintHelper(), new TypeResolver() ).getBeanMetaData( CustomerRepository.class );
 	}
 
 	@Test

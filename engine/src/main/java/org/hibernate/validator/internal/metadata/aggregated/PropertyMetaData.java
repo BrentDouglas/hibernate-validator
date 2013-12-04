@@ -16,17 +16,7 @@
 */
 package org.hibernate.validator.internal.metadata.aggregated;
 
-import java.lang.annotation.ElementType;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Type;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.validation.ElementKind;
-import javax.validation.metadata.GroupConversionDescriptor;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.core.MetaConstraint;
 import org.hibernate.validator.internal.metadata.descriptor.PropertyDescriptorImpl;
@@ -37,6 +27,17 @@ import org.hibernate.validator.internal.metadata.raw.ConstrainedExecutable;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedField;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedType;
 import org.hibernate.validator.internal.util.ReflectionHelper;
+
+import javax.validation.ElementKind;
+import javax.validation.metadata.GroupConversionDescriptor;
+import java.lang.annotation.ElementType;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Type;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents the constraint related meta data for a JavaBeans property.
@@ -163,24 +164,24 @@ public class PropertyMetaData extends AbstractConstraintMetaData implements Casc
 		private final Type propertyType;
 		private Member cascadingMember;
 
-		public Builder(Class<?> beanClass, ConstrainedField constrainedField, ConstraintHelper constraintHelper) {
-			super( beanClass, constraintHelper );
+		public Builder(Class<?> beanClass, ConstrainedField constrainedField, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+			super( beanClass, constraintHelper, typeResolver );
 
 			this.propertyName = ReflectionHelper.getPropertyName( constrainedField.getLocation().getMember() );
 			this.propertyType = ( (Field) constrainedField.getLocation().getMember() ).getGenericType();
 			add( constrainedField );
 		}
 
-		public Builder(Class<?> beanClass, ConstrainedType constrainedType, ConstraintHelper constraintHelper) {
-			super( beanClass, constraintHelper );
+		public Builder(Class<?> beanClass, ConstrainedType constrainedType, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+			super( beanClass, constraintHelper, typeResolver );
 
 			this.propertyName = null;
 			this.propertyType = null;
 			add( constrainedType );
 		}
 
-		public Builder(Class<?> beanClass, ConstrainedExecutable constrainedMethod, ConstraintHelper constraintHelper) {
-			super( beanClass, constraintHelper );
+		public Builder(Class<?> beanClass, ConstrainedExecutable constrainedMethod, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+			super( beanClass, constraintHelper, typeResolver );
 
 			this.propertyName = ReflectionHelper.getPropertyName( constrainedMethod.getLocation().getMember() );
 			this.propertyType = constrainedMethod.getLocation().typeOfAnnotatedElement();

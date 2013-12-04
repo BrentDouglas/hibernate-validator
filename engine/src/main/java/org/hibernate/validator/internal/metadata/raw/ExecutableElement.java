@@ -16,6 +16,10 @@
 */
 package org.hibernate.validator.internal.metadata.raw;
 
+import com.fasterxml.classmate.TypeResolver;
+import org.hibernate.validator.internal.util.ReflectionHelper;
+
+import javax.validation.ParameterNameProvider;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.reflect.AccessibleObject;
@@ -25,9 +29,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
-import javax.validation.ParameterNameProvider;
-
-import org.hibernate.validator.internal.util.ReflectionHelper;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 
@@ -101,13 +102,13 @@ public abstract class ExecutableElement {
 	 * @return {@code true} If this methods overrides the passed method,
 	 *         {@code false} otherwise.
 	 */
-	public boolean overrides(ExecutableElement other) {
+	public boolean overrides(ExecutableElement other, TypeResolver typeResolver) {
 		//constructors never override another constructor
 		if ( getMember() instanceof Constructor || other.getMember() instanceof Constructor ) {
 			return false;
 		}
 
-		return ReflectionHelper.overrides( (Method) getMember(), (Method) other.getMember() );
+		return ReflectionHelper.overrides( (Method) getMember(), (Method) other.getMember(), typeResolver );
 	}
 
 	/**

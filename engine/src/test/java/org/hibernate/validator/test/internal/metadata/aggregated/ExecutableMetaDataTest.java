@@ -16,17 +16,7 @@
 */
 package org.hibernate.validator.test.internal.metadata.aggregated;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import javax.validation.ElementKind;
-import javax.validation.constraints.NotNull;
-import javax.validation.groups.Default;
-
-import org.joda.time.DateMidnight;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.BeanMetaDataManager;
 import org.hibernate.validator.internal.metadata.aggregated.BeanMetaData;
 import org.hibernate.validator.internal.metadata.aggregated.ExecutableMetaData;
@@ -37,6 +27,16 @@ import org.hibernate.validator.test.internal.metadata.ConsistentDateParameters;
 import org.hibernate.validator.test.internal.metadata.Customer;
 import org.hibernate.validator.test.internal.metadata.CustomerRepository.ValidationGroup;
 import org.hibernate.validator.test.internal.metadata.CustomerRepositoryExt;
+import org.joda.time.DateMidnight;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import javax.validation.ElementKind;
+import javax.validation.constraints.NotNull;
+import javax.validation.groups.Default;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 import static org.fest.assertions.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -54,7 +54,7 @@ public class ExecutableMetaDataTest {
 
 	@BeforeMethod
 	public void setupBeanMetaData() {
-		beanMetaData = new BeanMetaDataManager( new ConstraintHelper() ).getBeanMetaData( CustomerRepositoryExt.class );
+		beanMetaData = new BeanMetaDataManager( new ConstraintHelper(), new TypeResolver() ).getBeanMetaData( CustomerRepositoryExt.class );
 	}
 
 	@Test

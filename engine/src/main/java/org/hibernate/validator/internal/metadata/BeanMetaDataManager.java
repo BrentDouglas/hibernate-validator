@@ -16,11 +16,7 @@
 */
 package org.hibernate.validator.internal.metadata;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import javax.validation.ParameterNameProvider;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.engine.DefaultParameterNameProvider;
 import org.hibernate.validator.internal.metadata.aggregated.BeanMetaData;
 import org.hibernate.validator.internal.metadata.aggregated.BeanMetaDataImpl;
@@ -33,6 +29,11 @@ import org.hibernate.validator.internal.metadata.provider.MetaDataProvider;
 import org.hibernate.validator.internal.metadata.raw.BeanConfiguration;
 import org.hibernate.validator.internal.util.ConcurrentReferenceHashMap;
 import org.hibernate.validator.internal.util.Contracts;
+
+import javax.validation.ParameterNameProvider;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 import static org.hibernate.validator.internal.util.ConcurrentReferenceHashMap.Option.IDENTITY_COMPARISONS;
@@ -88,14 +89,19 @@ public class BeanMetaDataManager {
 	 */
 	private final ConcurrentReferenceHashMap<Class<?>, BeanMetaData<?>> beanMetaDataCache;
 
+    /**
+     * Used for resolving type parameters. Thread-safe.
+     */
+    private final TypeResolver typeResolver;
+
 	/**
 	 * Creates a new {@code BeanMetaDataManager}. {@link DefaultParameterNameProvider} is used as parameter name
-	 * provider, no meta data providers besides the annotation-based providers are used.
+	 * provider, no meta data providers besides the annotation-based providers are used.Ex
 	 *
 	 * @param constraintHelper The constraint helper
 	 */
-	public BeanMetaDataManager(ConstraintHelper constraintHelper) {
-		this( constraintHelper, new DefaultParameterNameProvider(), Collections.<MetaDataProvider>emptyList() );
+	public BeanMetaDataManager(ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+		this( constraintHelper, typeResolver, new DefaultParameterNameProvider(), Collections.<MetaDataProvider>emptyList() );
 	}
 
 	/**
@@ -106,11 +112,13 @@ public class BeanMetaDataManager {
 	 * @param optionalMetaDataProviders optional meta data provider used on top of the annotation based provider
 	 */
 	public BeanMetaDataManager(ConstraintHelper constraintHelper,
+                               TypeResolver typeResolver,
 							   ParameterNameProvider parameterNameProvider,
 							   List<MetaDataProvider> optionalMetaDataProviders) {
 		this.constraintHelper = constraintHelper;
 		this.metaDataProviders = newArrayList();
 		this.metaDataProviders.addAll( optionalMetaDataProviders );
+        this.typeResolver = typeResolver;
 
 		this.beanMetaDataCache = new ConcurrentReferenceHashMap<Class<?>, BeanMetaData<?>>(
 				DEFAULT_INITIAL_CAPACITY,
@@ -171,7 +179,7 @@ public class BeanMetaDataManager {
 	 * @return A bean meta data object for the given type.
 	 */
 	private <T> BeanMetaDataImpl<T> createBeanMetaData(Class<T> clazz) {
-		BeanMetaDataBuilder<T> builder = BeanMetaDataBuilder.getInstance( constraintHelper, clazz );
+		BeanMetaDataBuilder<T> builder = BeanMetaDataBuilder.getInstance( constraintHelper, clazz, typeResolver );
 
 		for ( MetaDataProvider provider : metaDataProviders ) {
 			for ( BeanConfiguration<? super T> beanConfiguration : provider.getBeanConfigurationForHierarchy( clazz ) ) {

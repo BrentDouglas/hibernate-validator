@@ -16,14 +16,7 @@
 */
 package org.hibernate.validator.internal.metadata.aggregated;
 
-import java.lang.annotation.ElementType;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.validation.ElementKind;
-import javax.validation.metadata.GroupConversionDescriptor;
-import javax.validation.metadata.ParameterDescriptor;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.core.MetaConstraint;
 import org.hibernate.validator.internal.metadata.descriptor.ParameterDescriptorImpl;
@@ -31,6 +24,14 @@ import org.hibernate.validator.internal.metadata.facets.Cascadable;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedElement;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedElement.ConstrainedElementKind;
 import org.hibernate.validator.internal.metadata.raw.ConstrainedParameter;
+
+import javax.validation.ElementKind;
+import javax.validation.metadata.GroupConversionDescriptor;
+import javax.validation.metadata.ParameterDescriptor;
+import java.lang.annotation.ElementType;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * An aggregated view of the constraint related meta data for a single method
@@ -116,8 +117,8 @@ public class ParameterMetaData extends AbstractConstraintMetaData implements Cas
 		private final int parameterIndex;
 		private String name;
 
-		public Builder(Class<?> beanClass, ConstrainedParameter constrainedParameter, ConstraintHelper constraintHelper) {
-			super( beanClass, constraintHelper );
+		public Builder(Class<?> beanClass, ConstrainedParameter constrainedParameter, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
+			super( beanClass, constraintHelper, typeResolver );
 
 			this.parameterType = constrainedParameter.getLocation().getParameterType();
 			this.parameterIndex = constrainedParameter.getLocation().getParameterIndex();

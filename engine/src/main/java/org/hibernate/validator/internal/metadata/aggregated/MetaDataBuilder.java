@@ -16,11 +16,7 @@
  */
 package org.hibernate.validator.internal.metadata.aggregated;
 
-import java.lang.annotation.Annotation;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.core.ConstraintOrigin;
 import org.hibernate.validator.internal.metadata.core.MetaConstraint;
@@ -29,6 +25,11 @@ import org.hibernate.validator.internal.metadata.raw.ConstrainedElement;
 import org.hibernate.validator.internal.util.CollectionHelper;
 import org.hibernate.validator.internal.util.logging.Log;
 import org.hibernate.validator.internal.util.logging.LoggerFactory;
+
+import java.lang.annotation.Annotation;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashMap;
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashSet;
@@ -45,15 +46,17 @@ public abstract class MetaDataBuilder {
 	private static final Log log = LoggerFactory.make();
 
 	protected final ConstraintHelper constraintHelper;
+    protected final TypeResolver typeResolver;
 
 	private final Class<?> beanClass;
 	private final Set<MetaConstraint<?>> constraints = newHashSet();
 	private final Map<Class<?>, Class<?>> groupConversions = newHashMap();
 	private boolean isCascading = false;
 
-	protected MetaDataBuilder(Class<?> beanClass, ConstraintHelper constraintHelper) {
+	protected MetaDataBuilder(Class<?> beanClass, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
 		this.beanClass = beanClass;
 		this.constraintHelper = constraintHelper;
+        this.typeResolver = typeResolver;
 	}
 
 	/**

@@ -9,27 +9,14 @@
 * You may obtain a copy of the License at
 * http://www.apache.org/licenses/LICENSE-2.0
 * Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,  
+* distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
 package org.hibernate.validator.internal.metadata.aggregated;
 
-import java.lang.annotation.ElementType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import javax.validation.ElementKind;
-import javax.validation.groups.Default;
-import javax.validation.metadata.BeanDescriptor;
-import javax.validation.metadata.ConstructorDescriptor;
-import javax.validation.metadata.PropertyDescriptor;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.core.MetaConstraint;
 import org.hibernate.validator.internal.metadata.descriptor.BeanDescriptorImpl;
@@ -50,6 +37,20 @@ import org.hibernate.validator.internal.util.classhierarchy.Filters;
 import org.hibernate.validator.internal.util.logging.Log;
 import org.hibernate.validator.internal.util.logging.LoggerFactory;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
+
+import javax.validation.ElementKind;
+import javax.validation.groups.Default;
+import javax.validation.metadata.BeanDescriptor;
+import javax.validation.metadata.ConstructorDescriptor;
+import javax.validation.metadata.PropertyDescriptor;
+import java.lang.annotation.ElementType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashMap;
@@ -438,6 +439,8 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 
 		private final Set<BuilderDelegate> builders = newHashSet();
 
+        private final TypeResolver typeResolver;
+
 		private ConfigurationSource sequenceSource;
 
 		private ConfigurationSource providerSource;
@@ -447,13 +450,14 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 		private DefaultGroupSequenceProvider<? super T> defaultGroupSequenceProvider;
 
 
-		public BeanMetaDataBuilder(ConstraintHelper constraintHelper, Class<T> beanClass) {
+		public BeanMetaDataBuilder(ConstraintHelper constraintHelper, Class<T> beanClass, TypeResolver typeResolver) {
 			this.beanClass = beanClass;
 			this.constraintHelper = constraintHelper;
+            this.typeResolver = typeResolver;
 		}
 
-		public static <T> BeanMetaDataBuilder<T> getInstance(ConstraintHelper constraintHelper, Class<T> beanClass) {
-			return new BeanMetaDataBuilder<T>( constraintHelper, beanClass );
+		public static <T> BeanMetaDataBuilder<T> getInstance(ConstraintHelper constraintHelper, Class<T> beanClass, TypeResolver typeResolver) {
+			return new BeanMetaDataBuilder<T>( constraintHelper, beanClass, typeResolver );
 		}
 
 		public void add(BeanConfiguration<? super T> configuration) {
@@ -493,7 +497,8 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 					new BuilderDelegate(
 							beanClass,
 							constrainableElement,
-							constraintHelper
+							constraintHelper,
+                            typeResolver
 					)
 			);
 		}
@@ -519,10 +524,12 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 		private final ConstraintHelper constraintHelper;
 		private MetaDataBuilder propertyBuilder;
 		private ExecutableMetaData.Builder methodBuilder;
+        private final TypeResolver typeResolver;
 
-		public BuilderDelegate(Class<?> beanClass, ConstrainedElement constrainedElement, ConstraintHelper constraintHelper) {
+		public BuilderDelegate(Class<?> beanClass, ConstrainedElement constrainedElement, ConstraintHelper constraintHelper, TypeResolver typeResolver) {
 			this.beanClass = beanClass;
 			this.constraintHelper = constraintHelper;
+            this.typeResolver = typeResolver;
 
 			switch ( constrainedElement.getKind() ) {
 				case FIELD:
@@ -530,7 +537,8 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 					propertyBuilder = new PropertyMetaData.Builder(
 							beanClass,
 							constrainedField,
-							constraintHelper
+							constraintHelper,
+                            typeResolver
 					);
 					break;
 				case CONSTRUCTOR:
@@ -539,14 +547,16 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 					methodBuilder = new ExecutableMetaData.Builder(
 							beanClass,
 							constrainedExecutable,
-							constraintHelper
+							constraintHelper,
+                            typeResolver
 					);
 
 					if ( constrainedExecutable.isGetterMethod() ) {
 						propertyBuilder = new PropertyMetaData.Builder(
 								beanClass,
 								constrainedExecutable,
-								constraintHelper
+								constraintHelper,
+                            typeResolver
 						);
 					}
 					break;
@@ -555,7 +565,8 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 					propertyBuilder = new PropertyMetaData.Builder(
 							beanClass,
 							constrainedType,
-							constraintHelper
+							constraintHelper,
+                            typeResolver
 					);
 					break;
 			}
@@ -569,7 +580,7 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 				added = true;
 			}
 
-			if ( propertyBuilder != null && propertyBuilder.accepts( constrainedElement ) ) {
+			if ( propertyBuilder != null && propertyBuilder.accepts( constrainedElement) ) {
 				propertyBuilder.add( constrainedElement );
 
 				if ( !added && constrainedElement.getKind() == ConstrainedElementKind.METHOD && methodBuilder == null ) {
@@ -577,7 +588,8 @@ public final class BeanMetaDataImpl<T> implements BeanMetaData<T> {
 					methodBuilder = new ExecutableMetaData.Builder(
 							beanClass,
 							constrainedMethod,
-							constraintHelper
+							constraintHelper,
+                            typeResolver
 					);
 				}
 

@@ -16,18 +16,7 @@
 */
 package org.hibernate.validator.internal.engine;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.validation.ConstraintValidatorFactory;
-import javax.validation.MessageInterpolator;
-import javax.validation.ParameterNameProvider;
-import javax.validation.TraversableResolver;
-import javax.validation.Validator;
-import javax.validation.spi.ConfigurationState;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.HibernateValidatorConfiguration;
 import org.hibernate.validator.HibernateValidatorContext;
 import org.hibernate.validator.HibernateValidatorFactory;
@@ -40,6 +29,18 @@ import org.hibernate.validator.internal.metadata.provider.ProgrammaticMetaDataPr
 import org.hibernate.validator.internal.metadata.provider.XmlMetaDataProvider;
 import org.hibernate.validator.internal.util.logging.Log;
 import org.hibernate.validator.internal.util.logging.LoggerFactory;
+
+import javax.validation.ConstraintValidatorFactory;
+import javax.validation.MessageInterpolator;
+import javax.validation.ParameterNameProvider;
+import javax.validation.TraversableResolver;
+import javax.validation.Validator;
+import javax.validation.spi.ConfigurationState;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newArrayList;
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashSet;
@@ -88,6 +89,11 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 	 */
 	private final ConstraintHelper constraintHelper;
 
+    /**
+     * Used for resolving type parameters. Thread-safe.
+     */
+    private final TypeResolver typeResolver;
+
 	/**
 	 * Hibernate Validator specific flag to abort validation on first constraint violation.
 	 */
@@ -113,6 +119,7 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 		this.parameterNameProvider = configurationState.getParameterNameProvider();
 		this.beanMetaDataManagerMap = Collections.synchronizedMap( new IdentityHashMap<ParameterNameProvider, BeanMetaDataManager>() );
 		this.constraintHelper = new ConstraintHelper();
+        this.typeResolver = new TypeResolver();
 		this.constraintMappings = newHashSet();
 
 		// HV-302; don't load XmlMappingParser if not necessary
@@ -206,6 +213,7 @@ public class ValidatorFactoryImpl implements HibernateValidatorFactory {
 		if ( !beanMetaDataManagerMap.containsKey( parameterNameProvider ) ) {
 			beanMetaDataManager = new BeanMetaDataManager(
 					constraintHelper,
+                    typeResolver,
 					parameterNameProvider,
 					buildDataProviders( parameterNameProvider )
 			);

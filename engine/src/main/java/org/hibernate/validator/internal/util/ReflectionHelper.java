@@ -9,12 +9,38 @@
 * You may obtain a copy of the License at
 * http://www.apache.org/licenses/LICENSE-2.0
 * Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,  
+* distributed under the License is distributed on an "AS IS" BASIS,
 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
 package org.hibernate.validator.internal.util;
+
+import com.fasterxml.classmate.Filter;
+import com.fasterxml.classmate.MemberResolver;
+import com.fasterxml.classmate.ResolvedType;
+import com.fasterxml.classmate.ResolvedTypeWithMembers;
+import com.fasterxml.classmate.TypeResolver;
+import com.fasterxml.classmate.members.RawMethod;
+import com.fasterxml.classmate.members.ResolvedMethod;
+import org.hibernate.validator.internal.metadata.raw.ExecutableElement;
+import org.hibernate.validator.internal.util.logging.Log;
+import org.hibernate.validator.internal.util.logging.LoggerFactory;
+import org.hibernate.validator.internal.util.privilegedactions.ConstructorInstance;
+import org.hibernate.validator.internal.util.privilegedactions.GetAnnotationParameter;
+import org.hibernate.validator.internal.util.privilegedactions.GetClassLoader;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredConstructor;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredConstructors;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredField;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredFields;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredMethod;
+import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredMethods;
+import org.hibernate.validator.internal.util.privilegedactions.GetMethod;
+import org.hibernate.validator.internal.util.privilegedactions.GetMethodFromPropertyName;
+import org.hibernate.validator.internal.util.privilegedactions.GetMethods;
+import org.hibernate.validator.internal.util.privilegedactions.LoadClass;
+import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
+import org.hibernate.validator.internal.util.privilegedactions.SetAccessibility;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
@@ -35,33 +61,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.classmate.Filter;
-import com.fasterxml.classmate.MemberResolver;
-import com.fasterxml.classmate.ResolvedType;
-import com.fasterxml.classmate.ResolvedTypeWithMembers;
-import com.fasterxml.classmate.TypeResolver;
-import com.fasterxml.classmate.members.RawMethod;
-import com.fasterxml.classmate.members.ResolvedMethod;
-
-import org.hibernate.validator.internal.metadata.raw.ExecutableElement;
-import org.hibernate.validator.internal.util.logging.Log;
-import org.hibernate.validator.internal.util.logging.LoggerFactory;
-import org.hibernate.validator.internal.util.privilegedactions.ConstructorInstance;
-import org.hibernate.validator.internal.util.privilegedactions.GetAnnotationParameter;
-import org.hibernate.validator.internal.util.privilegedactions.GetClassLoader;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredConstructor;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredConstructors;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredField;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredFields;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredMethod;
-import org.hibernate.validator.internal.util.privilegedactions.GetDeclaredMethods;
-import org.hibernate.validator.internal.util.privilegedactions.GetMethod;
-import org.hibernate.validator.internal.util.privilegedactions.GetMethodFromPropertyName;
-import org.hibernate.validator.internal.util.privilegedactions.GetMethods;
-import org.hibernate.validator.internal.util.privilegedactions.LoadClass;
-import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
-import org.hibernate.validator.internal.util.privilegedactions.SetAccessibility;
 
 import static org.hibernate.validator.internal.util.CollectionHelper.newHashMap;
 import static org.hibernate.validator.internal.util.logging.Messages.MESSAGES;
@@ -90,11 +89,6 @@ public final class ReflectionHelper {
 	};
 
 	private static final Log log = LoggerFactory.make();
-
-	/**
-	 * Used for resolving type parameters. Thread-safe.
-	 */
-	private static final TypeResolver typeResolver = new TypeResolver();
 
 	private static final Map<String, Class<?>> PRIMITIVE_NAME_TO_PRIMITIVE;
 
@@ -727,6 +721,8 @@ public final class ReflectionHelper {
 
 	/**
 	 * Checks, whether {@code subTypeMethod} overrides {@code superTypeMethod}.
+     *
+     * @deprecated As of release 5.1.0, replaced by {@link #overrides(java.lang.reflect.Method, java.lang.reflect.Method, com.fasterxml.classmate.TypeResolver)}
 	 *
 	 * @param subTypeMethod The sub type method (cannot be {@code null}).
 	 * @param superTypeMethod The super type method (cannot be {@code null}).
@@ -734,7 +730,22 @@ public final class ReflectionHelper {
 	 * @return Returns {@code true} if {@code subTypeMethod} overrides {@code superTypeMethod},
 	 *         {@code false} otherwise.
 	 */
+    @Deprecated
 	public static boolean overrides(Method subTypeMethod, Method superTypeMethod) {
+        return overrides( subTypeMethod, superTypeMethod, new TypeResolver() );
+    }
+
+	/**
+	 * Checks, whether {@code subTypeMethod} overrides {@code superTypeMethod}.
+	 *
+	 * @param subTypeMethod The sub type method (cannot be {@code null}).
+	 * @param superTypeMethod The super type method (cannot be {@code null}).
+	 * @param typeResolver The resolver to use.
+	 *
+	 * @return Returns {@code true} if {@code subTypeMethod} overrides {@code superTypeMethod},
+	 *         {@code false} otherwise.
+	 */
+	public static boolean overrides(Method subTypeMethod, Method superTypeMethod, TypeResolver typeResolver) {
 		Contracts.assertValueNotNull( subTypeMethod, "subTypeMethod" );
 		Contracts.assertValueNotNull( superTypeMethod, "superTypeMethod" );
 
@@ -758,7 +769,7 @@ public final class ReflectionHelper {
 			return false;
 		}
 
-		return instanceMethodParametersResolveToSameTypes( subTypeMethod, superTypeMethod );
+		return instanceMethodParametersResolveToSameTypes( subTypeMethod, superTypeMethod, typeResolver );
 	}
 
 	/**
@@ -769,7 +780,7 @@ public final class ReflectionHelper {
 	 *
 	 * @return {@code true} if the parameters of the two methods resolve to the same types, {@code false otherwise}.
 	 */
-	private static boolean instanceMethodParametersResolveToSameTypes(Method subTypeMethod, Method superTypeMethod) {
+	private static boolean instanceMethodParametersResolveToSameTypes(Method subTypeMethod, Method superTypeMethod, TypeResolver typeResolver) {
 		if ( subTypeMethod.getParameterTypes().length == 0 ) {
 			return true;
 		}

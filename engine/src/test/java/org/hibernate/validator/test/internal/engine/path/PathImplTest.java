@@ -16,24 +16,24 @@
 */
 package org.hibernate.validator.test.internal.engine.path;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import javax.validation.ConstraintViolation;
-import javax.validation.Path;
-import javax.validation.Valid;
-import javax.validation.Validator;
-import javax.validation.constraints.NotNull;
-
-import org.testng.annotations.Test;
-
+import com.fasterxml.classmate.TypeResolver;
 import org.hibernate.validator.internal.engine.path.PathImpl;
 import org.hibernate.validator.internal.metadata.BeanMetaDataManager;
 import org.hibernate.validator.internal.metadata.aggregated.ExecutableMetaData;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.internal.metadata.raw.ExecutableElement;
 import org.hibernate.validator.testutil.ValidatorUtil;
+import org.testng.annotations.Test;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Path;
+import javax.validation.Valid;
+import javax.validation.Validator;
+import javax.validation.constraints.NotNull;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.hibernate.validator.testutil.ConstraintViolationAssert.assertNumberOfViolations;
 import static org.testng.Assert.assertEquals;
@@ -188,7 +188,7 @@ public class PathImplTest {
 						Item.class
 				)
 		);
-		ExecutableMetaData executableMetaData = new BeanMetaDataManager( new ConstraintHelper() ).getBeanMetaData(
+		ExecutableMetaData executableMetaData = new BeanMetaDataManager( new ConstraintHelper(), new TypeResolver() ).getBeanMetaData(
 				Container.class
 		).getMetaDataFor( executable );
 
